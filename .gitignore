@@ -1,0 +1,4 @@
+venv/*
+kuknotes.md
+kubectl*
+db_service/pgdata/*

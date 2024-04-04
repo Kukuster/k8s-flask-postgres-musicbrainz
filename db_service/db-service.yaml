@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-service
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+      - name: db-service
+        image: postgres:latest
+        env:
+        - name: POSTGRES_USER
+          value: "user12345user"
+        - name: POSTGRES_PASSWORD
+          value: "12345pass12345word12345"
+        - name: POSTGRES_DB
+          value: "songsdb"
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgredb
+        securityContext:
+          runAsUser: 999
+          runAsGroup: 999
+      volumes:
+      - name: postgredb
+        persistentVolumeClaim:
+          claimName: postgredb-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service
+spec:
+  ports:
+  - port: 5432
+  selector:
+    app: postgres
+  type: ClusterIP

@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: python-task-runner
+spec:
+  template:
+    spec:
+      containers:
+      - name: python-task-runner
+        image: python-task-runner-image:latest
+        imagePullPolicy: Never
+        command: ["python", "/app/task_runner.py"]
+      restartPolicy: Never
+  # backoffLimit: 4
