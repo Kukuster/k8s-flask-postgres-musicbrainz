@@ -58,3 +58,16 @@ pod_name=$(kubectl get pods --selector=job-name=python-task-runner --output=json
 kubectl logs -f $pod_name
 
 # kubectl exec -it $(kubectl get pods | grep '^python-task-runner' | awk 'FNR == 1 {print $1}') -- bash
+
+
+sleep 1
+kubectl delete -n "$context" deployment rest-api-service
+kubectl delete deployment rest-api-service
+kubectl delete service rest-api-service
+sleep 2
+docker build -t rest-api-service-image:"$build_version" -f ./rest_api_service/Dockerfile ./rest_api_service/
+
+kubectl apply -f ./rest_api_service/rest-api-service.yaml
+# sleep 10
+# kubectl logs -f $(kubectl get pods | grep '^rest-api-service' | awk 'FNR==1 {print $1}')
+
