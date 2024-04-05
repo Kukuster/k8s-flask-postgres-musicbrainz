@@ -35,18 +35,20 @@ kubectl delete -n "$context" deployment db-service
 kubectl delete deployment db-service
 kubectl delete pvc postgredb-pvc
 kubectl delete pv postgredb-pv
+kubectl delete service db-service
 
 kubectl apply -f ./db_service/postgres-pv.yaml
 kubectl apply -f ./db_service/postgres-pvc.yaml
 kubectl apply -f ./db_service/db-service.yaml
 
-sleep 3
+sleep 5
 
 # kubectl exec -it $(kubectl get pods | grep '^db-service' | awk 'FNR == 1 {print $1}') -- bash
 
 
 kubectl delete -n "$context" job python-task-runner
 kubectl delete job python-task-runner
+sleep 3
 docker build -t python-task-runner-image:"$build_version" -f ./populate_task/Dockerfile ./populate_task/
 
 # Start the job and watch stdout:

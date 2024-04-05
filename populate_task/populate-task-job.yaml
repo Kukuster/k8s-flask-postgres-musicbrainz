@@ -11,4 +11,4 @@ spec:
         imagePullPolicy: Never
         command: ["python", "/app/task_runner.py"]
       restartPolicy: Never
-  # backoffLimit: 4
+  backoffLimit: 0
