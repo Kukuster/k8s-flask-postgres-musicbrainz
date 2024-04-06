@@ -7,7 +7,7 @@ spec:
     spec:
       containers:
       - name: python-task-runner
-        image: python-task-runner-image:latest
+        image: gcr.io/coxit-test-proj/python-task-runner-image:latest
         env:
         - name: POSTGRES_USER
           valueFrom:
@@ -29,7 +29,7 @@ spec:
             secretKeyRef:
               name: app-parameters
               key: ARTIST_NAME
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         command: ["python", "/app/task_runner.py"]
       restartPolicy: Never
   backoffLimit: 0

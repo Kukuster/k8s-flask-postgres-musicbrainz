@@ -1,22 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: db-service
+  name: rest-api-service
 spec:
   selector:
     matchLabels:
-      app: postgres
+      app: rest-api-service
   replicas: 1
   template:
     metadata:
       labels:
-        app: postgres
+        app: rest-api-service
     spec:
-      securityContext:
-        fsGroup: 999
       containers:
-      - name: db-service
-        image: postgres:latest
+      - name: rest-api-service
+        image: gcr.io/coxit-test-proj/rest-api-service-image:latest
         env:
         - name: POSTGRES_USER
           valueFrom:
@@ -33,26 +31,29 @@ spec:
             secretKeyRef:
               name: app-parameters
               key: POSTGRES_DB
+        - name: ARTIST_NAME
+          valueFrom:
+            secretKeyRef:
+              name: app-parameters
+              key: ARTIST_NAME
+        imagePullPolicy: Always
         ports:
-        - containerPort: 5432
-        # volumeMounts:
-        # - mountPath: /var/lib/postgresql/data
-        #   name: postgredb
-        securityContext:
-          runAsUser: 999
-          runAsGroup: 999
-      # volumes:
-      # - name: postgredb
-      #   persistentVolumeClaim:
-      #     claimName: postgredb-pvc
+        - containerPort: 5000
+        livenessProbe:
+          httpGet:
+            path: /are-you-up
+            port: 5000
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: db-service
+  name: rest-api-service
 spec:
   ports:
-  - port: 5432
+  - port: 60080
+    targetPort: 5000
   selector:
-    app: postgres
-  type: ClusterIP
+    app: rest-api-service
+  type: LoadBalancer

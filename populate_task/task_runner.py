@@ -1,28 +1,22 @@
 from time import sleep, time
+import os
 import requests
-import psycopg2
-from psycopg2.extras import execute_values
-import musicbrainzngs
 import json
 from collections import namedtuple
 from typing import Dict, List, Any, NamedTuple, Union, Tuple, TypeVar
 
-# Configuration (use environment variables for production)
-DB_NAME = "songsdb"
-DB_USER = "user12345user"
-DB_PASS = "12345pass12345word12345"
-DB_HOST = "db-service"
-DB_PORT = 5432
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@postgres/{DB_NAME}"
-API_URL = "https://api.example.com/data"
+import psycopg2
+from psycopg2.extras import execute_values
+import musicbrainzngs
+
+from config import DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT, ARTIST_NAME
 
 
 APP_DIR = '/app'
 
-
 T = TypeVar("T")
 def flatten_list_of_lists(matrix: List[List[T]]) -> List[T]:
-    flat_list = []
+    flat_list: List[T] = []
     for row in matrix:
         flat_list += row
     return flat_list
@@ -208,7 +202,7 @@ class populate_db_task:
                     rec_duration = int(rec['length'])
                 except (KeyError, TypeError):
                     continue
-                rec_duration_str = f"{rec_duration // 60000}:{rec_duration % 60000 // 1000}"
+                rec_duration_str = f"{rec_duration // 60000}:{rec_duration % 60000 // 1000 :02d}"
                 self.save_song_to_database(rec_mbid, rec_title, rec_duration_str, release_id, artist_id)
 
 
@@ -250,12 +244,15 @@ class populate_db_task:
         return song_id
 
 def main():
+    print(f"{DB_NAME=}, {DB_USER=}, {DB_HOST=}, {DB_PORT=}, {ARTIST_NAME=}")
+    if ARTIST_NAME is None or ARTIST_NAME == "":
+        raise ValueError("ARTIST_NAME environment variable must be set")
+
     task = populate_db_task(DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT)
 
     task.start_api_usage_stopwatch()
-    band = 'Imagine Dragons'
 
-    artist = task.fetch_artist(band)
+    artist = task.fetch_artist(ARTIST_NAME)
     if artist is None:
         exit(1)
     artist_id, artist_mbid = artist

@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS songs (
     song_title VARCHAR(255) NOT NULL,
     release_id INTEGER NOT NULL REFERENCES releases(id),
     artist_id INTEGER NOT NULL REFERENCES artists(id),
-    duration VARCHAR(255) NOT NULL, -- `length` is an SQL keyword; format "MM:SS"
+    duration VARCHAR(255) NOT NULL, -- `length` is an SQL keyword; format "mm:ss"
     CONSTRAINT PK_id PRIMARY KEY (id),
     CONSTRAINT fk_artist FOREIGN KEY (artist_id) REFERENCES artists(id),
     CONSTRAINT fk_release FOREIGN KEY (release_id) REFERENCES releases(id),

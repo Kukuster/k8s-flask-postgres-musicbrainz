@@ -10,9 +10,7 @@ if [ "$ec" -ne 0 ]; then
     exit 1
 fi
 
-echo POSTGRES_DB=$POSTGRES_DB
-echo POSTGRES_USER=$POSTGRES_USER
-echo ARTIST_NAME=$ARTIST_NAME
+PROJECT_ID="coxit-test-proj"
 
 build_version="$1"
 
@@ -21,11 +19,8 @@ if [ -z "$build_version" ]; then
 fi
 
 
-context="default"
-context="minikube"
+gcloud container clusters get-credentials coxit-test-autopilot-cluster-1 --region us-central1 --project "$PROJECT_ID"
 
-minikube start
-eval $(minikube docker-env)
 
 kubectl delete secret app-parameters
 kubectl create secret generic app-parameters \
@@ -34,10 +29,10 @@ kubectl create secret generic app-parameters \
     "--from-literal=POSTGRES_PASSWORD=$POSTGRES_PASSWORD" \
     "--from-literal=ARTIST_NAME=$ARTIST_NAME"
 
+
 sleep 5
 
 
-kubectl delete -n "$context" deployment db-service
 kubectl delete deployment db-service
 kubectl delete pvc postgredb-pvc
 kubectl delete pv postgredb-pv
@@ -53,14 +48,17 @@ sleep 5
 # kubectl exec -it $(kubectl get pods | grep '^db-service' | awk 'FNR == 1 {print $1}') -- bash
 
 
-kubectl delete -n "$context" job python-task-runner
 kubectl delete job python-task-runner
 sleep 3
 img="python-task-runner-image:$build_version"
+remote_img="gcr.io/$PROJECT_ID/$img"
 docker build -t "$img" -f ./populate_task/Dockerfile ./populate_task/
+docker tag "$img" "$remote_img"
+docker push "$remote_img"
+
 
 # Start the job and watch stdout:
-kubectl apply -f ./populate_task/populate-task-job.yaml
+kubectl apply -f ./populate_task/populate-task-job_gcp-gke.yaml
 sleep 5
 pod_name=$(kubectl get pods --selector=job-name=python-task-runner --output=jsonpath='{.items[0].metadata.name}')
 kubectl logs -f $pod_name
@@ -70,16 +68,19 @@ kubectl logs -f $pod_name
 
 
 sleep 1
-kubectl delete -n "$context" deployment rest-api-service
 kubectl delete deployment rest-api-service
 kubectl delete service rest-api-service
 sleep 2
 img="rest-api-service-image:$build_version"
+remote_img="gcr.io/$PROJECT_ID/$img"
 docker build -t "$img" -f ./rest_api_service/Dockerfile ./rest_api_service/
+docker tag "$img" "$remote_img"
+docker push "$remote_img"
 
-kubectl apply -f ./rest_api_service/rest-api-service.yaml
+kubectl apply -f ./rest_api_service/rest-api-service_gcp-gke.yaml
 
 # sleep 10
 # # read logs from the rest-api-service pod:
 # kubectl logs -f $(kubectl get pods | grep '^rest-api-service' | awk 'FNR==1 {print $1}')
+
 

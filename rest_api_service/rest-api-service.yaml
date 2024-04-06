@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       app: rest-api-service
-  replicas: 1 # You can scale this based on your need
+  replicas: 1
   template:
     metadata:
       labels:
@@ -15,6 +15,27 @@ spec:
       containers:
       - name: rest-api-service
         image: rest-api-service-image:latest
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: app-parameters
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-parameters
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: app-parameters
+              key: POSTGRES_DB
+        - name: ARTIST_NAME
+          valueFrom:
+            secretKeyRef:
+              name: app-parameters
+              key: ARTIST_NAME
         imagePullPolicy: Never
         ports:
         - containerPort: 5000
@@ -22,7 +43,7 @@ spec:
           httpGet:
             path: /are-you-up
             port: 5000
-          initialDelaySeconds: 15
+          initialDelaySeconds: 10
           timeoutSeconds: 5
 ---
 apiVersion: v1
