@@ -1,4 +1,7 @@
 venv/*
+__pycache__/*
+**/*.pyc
+
 kuknotes.md
 kubectl*
 db_service/pgdata/*

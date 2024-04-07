@@ -48,7 +48,7 @@ def _song_title_distance(song: Song, query: str) -> float:
 
 
 def _song_title_distance_is_under_threshold(song: Song, query: str) -> bool:
-    # query is allowed to be different by 15% of the length of the longer string, plus 1 character
+    # query is allowed to be different by 15% of the length of the longer string, plus by 1 character
     additive_threshold = 1
     proportional_threshold = 0.15
 
@@ -75,13 +75,13 @@ def search_by_title(Songs: List[Song], query: str):
 
 
 def get_release(release_id: int) -> Release:
-    record: Union[Release, None] = db.session.query(Release).get(release_id) #type:ignore
+    record: Union[Release, None] = db.session.get(Release, release_id) #type:ignore
     if record is None:
         raise RecordNotFoundError(f"Release with id {release_id} not found")
     return record
 
 def get_artist(artist_id: int) -> Artist:
-    record: Union[Artist, None] = db.session.query(Artist).get(artist_id) #type:ignore
+    record: Union[Artist, None] = db.session.get(Artist, artist_id) #type:ignore
     if record is None:
         raise RecordNotFoundError(f"Artist with id {artist_id} not found")
     return record
