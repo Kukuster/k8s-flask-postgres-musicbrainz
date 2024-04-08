@@ -10,9 +10,9 @@ if [ "$ec" -ne 0 ]; then
     exit 1
 fi
 
-echo POSTGRES_DB=$POSTGRES_DB
-echo POSTGRES_USER=$POSTGRES_USER
-echo ARTIST_NAME=$ARTIST_NAME
+echo "POSTGRES_DB=$POSTGRES_DB"
+echo "POSTGRES_USER=$POSTGRES_USER"
+echo "ARTIST_NAME=$ARTIST_NAME"
 
 build_version="$1"
 
@@ -27,7 +27,7 @@ context="minikube"
 minikube start
 eval $(minikube docker-env)
 
-kubectl delete secret app-parameters
+kubectl delete secret app-parameters 2>&1 | grep -iv "notfound\|not found"
 kubectl create secret generic app-parameters \
     "--from-literal=POSTGRES_DB=$POSTGRES_DB" \
     "--from-literal=POSTGRES_USER=$POSTGRES_USER" \
@@ -40,42 +40,52 @@ kubectl create secret generic app-parameters \
 sleep 5
 
 
-kubectl delete -n "$context" deployment db-service
-kubectl delete deployment db-service
-kubectl delete pvc postgredb-pvc
-kubectl delete pv postgredb-pv
-kubectl delete service db-service
+kubectl delete -n "$context" deployment db-service 2>&1 | grep -iv "notfound\|not found"
+kubectl delete deployment db-service 2>&1 | grep -iv "notfound\|not found"
+# kubectl delete pvc postgredb-pvc 2>&1 | grep -iv "notfound\|not found"
+# kubectl delete pv postgredb-pv 2>&1 | grep -iv "notfound\|not found"
+kubectl delete service db-service 2>&1 | grep -iv "notfound\|not found"
+
+sleep 5
 
 # kubectl apply -f ./db_service/postgres-pv.yaml
 # kubectl apply -f ./db_service/postgres-pvc.yaml
 kubectl apply -f ./db_service/db-service.yaml
 
-sleep 5
+sleep 9
 
 # # connect to the shell in the db-service pod:
 # kubectl exec -it $(kubectl get pods | grep '^db-service' | awk 'FNR == 1 {print $1}') -- bash
 
 
-kubectl delete -n "$context" job python-task-runner
-kubectl delete job python-task-runner
+kubectl delete -n "$context" job python-task-runner 2>&1 | grep -iv "notfound\|not found"
+kubectl delete job python-task-runner 2>&1 | grep -iv "notfound\|not found"
 sleep 3
 img="python-task-runner-image:$build_version"
 docker build -t "$img" -f ./populate_task/Dockerfile ./populate_task/
 
-# Start the job and watch stdout:
+
 kubectl apply -f ./populate_task/populate-task-job.yaml
-sleep 5
-pod_name=$(kubectl get pods --selector=job-name=python-task-runner --output=jsonpath='{.items[0].metadata.name}')
+
+pod_name=""
+# try while variable is empty
+while [ -z "$pod_name" ]; do
+    pod_name=$(kubectl get pods --selector=job-name=python-task-runner --output=jsonpath='{.items[0].metadata.name}')
+    sleep 1
+done
+
+# watch job's stdout:
 kubectl logs -f $pod_name
+
 
 # # connect to the shell in the python-task-runner pod:
 # kubectl exec -it $(kubectl get pods | grep '^python-task-runner' | awk 'FNR == 1 {print $1}') -- bash
 
 
 sleep 1
-kubectl delete -n "$context" deployment rest-api-service
-kubectl delete deployment rest-api-service
-kubectl delete service rest-api-service
+kubectl delete -n "$context" deployment rest-api-service 2>&1 | grep -iv "notfound\|not found"
+kubectl delete deployment rest-api-service 2>&1 | grep -iv "notfound\|not found"
+kubectl delete service rest-api-service 2>&1 | grep -iv "notfound\|not found"
 sleep 2
 img="rest-api-service-image:$build_version"
 docker build -t "$img" -f ./rest_api_service/Dockerfile ./rest_api_service/

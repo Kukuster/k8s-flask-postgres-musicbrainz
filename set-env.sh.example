@@ -3,3 +3,8 @@ export ARTIST_NAME="Imagine Dragons"
 export POSTGRES_DB="songsdb"
 export POSTGRES_USER="dbuser"
 export POSTGRES_PASSWORD="dbpassword"
+
+# optionally, for GCP GKE build
+export PROJECT_ID="test-proj"
+export CLUSTER_ID="test-autopilot-cluster-1"
+export REGION_NAME="us-central1"
