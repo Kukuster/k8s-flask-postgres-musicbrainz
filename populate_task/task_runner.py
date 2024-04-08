@@ -7,10 +7,9 @@ from typing import Dict, List, Any, NamedTuple, Union, Tuple, TypeVar
 
 import psycopg2
 from psycopg2.extras import execute_values
-import musicbrainzngs
 
 from config import DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT, ARTIST_NAME
-
+from musicbrainz_api import MusicBrainzAPI
 
 APP_DIR = '/app'
 
@@ -31,19 +30,7 @@ class populate_db_task:
     DB_HOST: str
     DB_PORT: int
 
-    api_request_counter: int
-    api_requests_start_time: float
-    api_requests_end_time: float
-
-
-    def count_api_request(self):
-        sleep(0.05) # https://wiki.musicbrainz.org/MusicBrainz_API/Rate_Limiting
-        self.api_request_counter += 1
-    def start_api_usage_stopwatch(self):
-        self.api_requests_start_time = time()
-    def stop_api_usage_stopwatch(self):
-        api_usage_duration = time() - self.api_requests_start_time
-        print(f"MusicBrainz API requests: {self.api_request_counter} in {api_usage_duration:.2f} seconds")
+    api: MusicBrainzAPI
 
     def create_tables_ifnotexists(self):
         for schema_file in ["artists_schema.sql", "releases_schema.sql", "songs_schema.sql"]:
@@ -54,9 +41,6 @@ class populate_db_task:
                 print(">>")
                 print(self.cur.execute(SQL_QUERY))
         self.conn.commit()
-        for table in ["artists", "releases", "songs"]:
-            print(f"DESCRIBING {table}:")
-            print(self.cur.execute(f"Select column_name from information_schema.columns where table_name = '{table}'"))
         sleep(1)
 
 
@@ -72,28 +56,21 @@ class populate_db_task:
 
         self.create_tables_ifnotexists()
 
-        self.set_useragent("test kuk app", "0.1", "KukusterMOP@gmail.com")
-
     def disconnect_from_db(self):
         self.cur.close()
         self.conn.close()
 
-    def set_useragent(self, app_name, app_version, app_contact):
-        musicbrainzngs.set_useragent(app_name, app_version, app_contact)
-        self.api_request_counter = 0
-
-    def __init__(self, DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT):
+    def __init__(self, DB_NAME: str, DB_USER: str, DB_PASS: str, DB_HOST: str, DB_PORT: int):
         self.DB_NAME = DB_NAME
         self.DB_USER = DB_USER
         self.DB_PASS = DB_PASS
         self.DB_HOST = DB_HOST
         self.DB_PORT = DB_PORT
         self.connect_to_db()
-
+        self.api = MusicBrainzAPI()
 
     def fetch_artist(self, artist_name: str) -> Union[None, Tuple[int, str]]:
-        self.count_api_request()
-        artist_search_result = musicbrainzngs.search_artists(artist=artist_name, limit=1)
+        artist_search_result = self.api.search_artist(artist_name)
         try:
             mbid: str = artist_search_result["artist-list"][0]["id"]
             name: str = artist_search_result["artist-list"][0]["name"]
@@ -107,9 +84,7 @@ class populate_db_task:
             return None
 
     def fetch_releases(self, artist_id: int, artist_mbid: str) -> List[release_T]:
-        self.count_api_request()
-        # releases_search_result = musicbrainzngs.browse_releases(artist=artist_mbid, release_type=["album", "ep", "single"])
-        release_groups_result = musicbrainzngs.browse_release_groups(artist=artist_mbid)
+        release_groups_result = self.api.get_release_groups(artist_mbid)
 
         selected_releases: List[release_T] = []
 
@@ -124,9 +99,7 @@ class populate_db_task:
 
                 print(f"Release_group: {rg_date} - '{rg_title}' ({rg_type}) [{rg_id=}]")
 
-                # browse_releases provides more data than get_release_group_by_id
-                self.count_api_request()
-                rg_releases = musicbrainzngs.browse_releases(release_group=rg_id, release_type=["album", "ep", "single"], includes=["labels"])
+                rg_releases = self.api.get_releases(rg_id)
                 releases = rg_releases["release-list"]
 
                 print(f"has {len(releases)} releases. Looping ...")
@@ -186,8 +159,7 @@ class populate_db_task:
 
 
     def fetch_songs(self, release_mbid: str, release_id: int, artist_id: int):
-        self.count_api_request()
-        recordings = musicbrainzngs.browse_recordings(release=release_mbid)
+        recordings = self.api.get_recordings(release_mbid)
         try:
             recording_list = recordings["recording-list"]
         except (KeyError, TypeError):
@@ -197,8 +169,8 @@ class populate_db_task:
             print(f"Found {len(recording_list)} recordings in release '{release_mbid}'")
             for rec in recording_list:
                 try:
-                    rec_mbid: str = rec['id']
-                    rec_title: str = rec['title']
+                    rec_mbid = rec['id']
+                    rec_title = rec['title']
                     rec_duration = int(rec['length'])
                 except (KeyError, TypeError):
                     continue
@@ -245,12 +217,12 @@ class populate_db_task:
 
 def main():
     print(f"{DB_NAME=}, {DB_USER=}, {DB_HOST=}, {DB_PORT=}, {ARTIST_NAME=}")
-    if ARTIST_NAME is None or ARTIST_NAME == "":
+    if ARTIST_NAME == "":
         raise ValueError("ARTIST_NAME environment variable must be set")
 
     task = populate_db_task(DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT)
 
-    task.start_api_usage_stopwatch()
+    task.api.start()
 
     artist = task.fetch_artist(ARTIST_NAME)
     if artist is None:
@@ -264,7 +236,7 @@ def main():
 
     task.conn.commit()
 
-    task.stop_api_usage_stopwatch()
+    task.api.stop()
 
     task.disconnect_from_db()
 

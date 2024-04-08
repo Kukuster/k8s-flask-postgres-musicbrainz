@@ -32,7 +32,10 @@ kubectl create secret generic app-parameters \
     "--from-literal=POSTGRES_DB=$POSTGRES_DB" \
     "--from-literal=POSTGRES_USER=$POSTGRES_USER" \
     "--from-literal=POSTGRES_PASSWORD=$POSTGRES_PASSWORD" \
-    "--from-literal=ARTIST_NAME=$ARTIST_NAME"
+    "--from-literal=ARTIST_NAME=$ARTIST_NAME" \
+    "--from-literal=MB_USERAGENT_APP_NAME=$MB_USERAGENT_APP_NAME" \
+    "--from-literal=MB_USERAGENT_APP_VERSION=$MB_USERAGENT_APP_VERSION" \
+    "--from-literal=MB_USERAGENT_APP_CONTACT=$MB_USERAGENT_APP_CONTACT"
 
 sleep 5
 

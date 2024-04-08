@@ -29,6 +29,21 @@ spec:
             secretKeyRef:
               name: app-parameters
               key: ARTIST_NAME
+        - name: MB_USERAGENT_APP_NAME
+          valueFrom:
+            secretKeyRef:
+              name: app-parameters
+              key: MB_USERAGENT_APP_NAME
+        - name: MB_USERAGENT_APP_VERSION
+          valueFrom:
+            secretKeyRef:
+              name: app-parameters
+              key: MB_USERAGENT_APP_VERSION
+        - name: MB_USERAGENT_APP_CONTACT
+          valueFrom:
+            secretKeyRef:
+              name: app-parameters
+              key: MB_USERAGENT_APP_CONTACT
         imagePullPolicy: Always
         command: ["python", "/app/task_runner.py"]
       restartPolicy: Never

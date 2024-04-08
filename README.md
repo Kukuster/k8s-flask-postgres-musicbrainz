@@ -74,13 +74,50 @@ Response example:
 
 ### 1. create `set-env.sh` file with env variables, based on `set-env.sh.example`
 
-### 2. build for your environment
+### (optionally) 2. test
+
+You can run unit tests which do not rely on k8s environment
+
+For the first run, I recommend creating a python venv and install the dependencies for both python pods:
+```bash
+python -m venv venv; # python 3.8 and 3.12 work
+. venv/bin/activate
+
+pip install -r populate_task/requirements.txt
+pip install -r rest_api_service/requirements.txt
+```
+
+Then, run tests:
+```bash
+. venv/bin/activate
+. set-env.sh
+
+ #1 
+python populate_task/test.py
+ #2 
+python rest_api_service/test.py 
+```
+
+### 3. build and run for your k8s environment
+Requires installed `docker` and `kubectl`
 
 #### A) Locally (minikube)
+Requires installed `minikube`
+
+Run:
+
 `bash build.sh`
 
 if pods started successfully and services are running, check ip address of the service with `minikube ip`. Address of the REST API service will be the ip address from its output with the `30080` port.
 
 #### B) on Google Kubernetes Engine (GKE)
+Requires installed `gcloud`, and k8s cluster created in Google Kubernetes Engine console.
+
+Run:
+
 `bash build-gpc-gke.sh`
+
+if pods started successfully and services are running, check the external ip address of the REST API service with `kubectl get services`. GCP GKE will automatically assign a `EXTERNAL-IP` field to `rest-api-service` shortly after pods start.
+
+Use `EXTERNAL-IP` with port `60080` as an endpoint base for the REST API service.
 
