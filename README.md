@@ -30,10 +30,10 @@ Response parameters for status code `200`:
 | `track_title`   | STRING   | name of the track |
 
 
-Response parameters for status code `4xx`:
+Response parameters for status codes `4xx`&`5xx`:
 | Name | Type | Description |
 | -------- | -------- | -------- |
-| `status`   | INTEGER   | HTTP status code (4xx) |
+| `status`   | INTEGER   | HTTP status code (4xx/5xx) |
 | `error`   | STRING   | explanation |
 
 ---
@@ -47,8 +47,8 @@ Response example:
 ```json
 {
   "artist_name": "Imagine Dragons",
-  "duration": "3:07",
-  "mbid": "bd61eda3-eb77-4634-ba66-4a084f7f8455",
+  "duration": "3:06",
+  "mbid": "4d28f3d7-6e11-317e-9085-407c931211b9",
   "release_title": "Night Visions",
   "track_title": "Radioactive",
   "status": 200
