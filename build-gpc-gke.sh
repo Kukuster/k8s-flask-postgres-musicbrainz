@@ -53,14 +53,14 @@ sleep 10
 
 
 kubectl delete job python-task-runner 2>&1 | grep -iv "notfound\|not found"
-sleep 3
+sleep 5
 img="python-task-runner-image:$build_version"
 remote_img="gcr.io/$PROJECT_ID/$img"
 docker build -t "$img" -f ./populate_task/Dockerfile ./populate_task/
 docker tag "$img" "$remote_img"
 docker push "$remote_img"
 
-
+sleep 4
 kubectl apply -f ./populate_task/populate-task-job_gcp-gke.yaml
 
 pod_name=""
@@ -77,11 +77,18 @@ kubectl logs -f $pod_name
 # # connect to the shell in the python-task-runner pod:
 # kubectl exec -it $(kubectl get pods | grep '^python-task-runner' | awk 'FNR == 1 {print $1}') -- bash
 
+# wait until job finishes by grepping for status (because querying by "-o jsonpath=..." does not work for some reason)
+job_complete=""
+while [ -z "$job_complete" ]; do
+    job_complete=$(kubectl get jobs python-task-runner -o jsonpath='{.status.conditions}' | grep -i "complete\|failed\|finish")
+    sleep 1
+done
+
 
 sleep 1
 kubectl delete deployment rest-api-service 2>&1 | grep -iv "notfound\|not found"
 kubectl delete service rest-api-service 2>&1 | grep -iv "notfound\|not found"
-sleep 2
+sleep 4
 img="rest-api-service-image:$build_version"
 remote_img="gcr.io/$PROJECT_ID/$img"
 docker build -t "$img" -f ./rest_api_service/Dockerfile ./rest_api_service/
