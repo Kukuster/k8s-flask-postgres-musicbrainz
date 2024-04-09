@@ -2,7 +2,12 @@ export ARTIST_NAME="Imagine Dragons"
 
 export POSTGRES_DB="songsdb"
 export POSTGRES_USER="dbuser"
-export POSTGRES_PASSWORD="dbpassword"
+export POSTGRES_PASSWORD="dbpassword" # set a strong but arbitrary password
+
+export MB_USERAGENT_APP_NAME="YourApp"
+export MB_USERAGENT_APP_VERSION="0.1"
+export MB_USERAGENT_APP_CONTACT="http://example.com"
+export MB_USERAGENT_APP_CONTACT="youremail@example.com"
 
 # optionally, for GCP GKE build
 export PROJECT_ID="test-proj"
