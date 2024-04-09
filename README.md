@@ -105,6 +105,8 @@ python rest_api_service/test.py
 #### A) Locally (minikube)
 :grey_exclamation: Requires installed `minikube`
 
+`minikube` requires non-root docker access. You may need to execute `sudo usermod -aG docker $USER && newgrp docker` to add your user to docker group [[R]](https://github.com/kubernetes/minikube/issues/7903#issuecomment-802493269)
+
 Run:
 
 `bash build.sh`
