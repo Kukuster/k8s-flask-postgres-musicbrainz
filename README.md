@@ -3,7 +3,7 @@
 ## Public API
 
 ### Base endpoint
-http://35.225.52.104:60080
+http://34.123.189.132:60080
 
 
 ### Endpoints
@@ -40,7 +40,7 @@ Response parameters for status code `4xx`:
 
 Request example:
 
-`curl http://35.225.52.104:60080/search-track?q=radeoactive`
+`curl http://34.123.189.132:60080/search-track?q=radeoactive`
 
 Response example:
 
@@ -57,7 +57,7 @@ Response example:
 
 Request example:
 
-`curl http://35.225.52.104:60080/search-track?q=radeeaeaoactive`
+`curl http://34.123.189.132:60080/search-track?q=radeeaeaoactive`
 
 Response example:
 
