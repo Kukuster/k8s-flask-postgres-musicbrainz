@@ -72,11 +72,12 @@ Response example:
 
 ## Build from source and run
 
-### 1. create `set-env.sh` file with env variables, based on `set-env.sh.example`
+### 1. create `set-env.sh` file with env variables
+Use `set-env.sh.example` as an example
 
 ### (optionally) 2. test
 
-You can run unit tests which do not rely on k8s environment
+The tests do not rely on the k8s environment. You can use your python installed on your system.
 
 For the first run, I recommend creating a python venv and install the dependencies for both python pods:
 ```bash
@@ -99,25 +100,25 @@ python rest_api_service/test.py
 ```
 
 ### 3. build and run for your k8s environment
-Requires installed `docker` and `kubectl`
+:grey_exclamation: Requires installed `docker` and `kubectl`
 
 #### A) Locally (minikube)
-Requires installed `minikube`
+:grey_exclamation: Requires installed `minikube`
 
 Run:
 
 `bash build.sh`
 
-if pods started successfully and services are running, check ip address of the service with `minikube ip`. Address of the REST API service will be the ip address from its output with the `30080` port.
+if pods started successfully and services are running, check ip address of the service by running `minikube ip`. The address of the REST API service will be the ip address from its output with the `30080` port.
 
 #### B) on Google Kubernetes Engine (GKE)
-Requires installed `gcloud`, and k8s cluster created in Google Kubernetes Engine console.
+:grey_exclamation: Requires installed `gcloud` and logged in to `gcloud` [[R]](https://cloud.google.com/sdk/docs/install-sdk), and a k8s cluster created in [Google Kubernetes Engine console](https://console.cloud.google.com/kubernetes/list/overview) with corresponding credentials specified in `set-env.sh`.
 
 Run:
 
 `bash build-gpc-gke.sh`
 
-if pods started successfully and services are running, check the external ip address of the REST API service with `kubectl get services`. GCP GKE will automatically assign a `EXTERNAL-IP` field to `rest-api-service` shortly after pods start.
+if pods started successfully and services are running, check the external ip address of the REST API service by running `kubectl get services`. GCP GKE will automatically assign a `EXTERNAL-IP` field to `rest-api-service` shortly after pods start.
 
-Use `EXTERNAL-IP` with port `60080` as an endpoint base for the REST API service.
+Use that `EXTERNAL-IP` with the port `60080` as an endpoint base for the REST API service. (In my case, `EXTERNAL-IP` is 34.123.189.132)
 
