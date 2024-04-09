@@ -4,14 +4,13 @@ from typing import List
 from flask import jsonify, make_response, Blueprint
 from flask import request
 
-from db import db, Song, get_artist, get_release, search_by_title
+from db import db, Track, get_artist, get_release, search_by_title
 
 
 blueprint = Blueprint('api', __name__)
 
-@blueprint.route('/search-song', methods=['GET'])
-def search_a_song():
-    # with blueprint.app_context():
+@blueprint.route('/search-track', methods=['GET'])
+def search_a_track():
     q = request.args.get('q')
     if not q:
         status = 400
@@ -23,8 +22,17 @@ def search_a_song():
         # response.mimetype = "text/plain"
         # return response
 
-    Songs: List[Song] = Song.query.all()
-    found = search_by_title(Songs, q)
+    Tracks: List[Track] = Track.query.all()
+    if len(Tracks) == 0:
+        status = 500
+        return jsonify({
+            'status': status,
+            'error': 'No tracks found in the database'
+        }), 500
+        # response = make_response('No tracks found in the database', 500)
+        # response.mimetype = "text/plain"
+        # return response
+    found = search_by_title(Tracks, q)
 
     if found:
         status = 200
@@ -32,7 +40,7 @@ def search_a_song():
             'status': status,
             # 'id': found.id,
             'mbid': found.mbid,
-            'song_title': found.song_title,
+            'track_title': found.track_title,
             # 'release_id': found.release_id,
             # 'artist_id': found.artist_id,
             'release_title': get_release(found.release_id).release_title,
@@ -52,20 +60,19 @@ def search_a_song():
         # response.mimetype = "text/plain"
         # return response
 
-@blueprint.route('/songs/<int:song_id>', methods=['GET'])
-def get_song(song_id: int):
-    # with blueprint.app_context():
-    song = Song.query.get(song_id)
-    if song is None:
-        return jsonify({'error': 'Song not found'}), 404
+@blueprint.route('/tracks/<int:track_id>', methods=['GET'])
+def get_track(track_id: int):
+    track = Track.query.get(track_id)
+    if track is None:
+        return jsonify({'error': 'Track not found'}), 404
 
     return jsonify({
-        'id': song.id,
-        'mbid': song.mbid,
-        'song_title': song.song_title,
-        'release_id': song.release_id,
-        'artist_id': song.artist_id,
-        'duration': song.duration
+        'id': track.id,
+        'mbid': track.mbid,
+        'track_title': track.track_title,
+        'release_id': track.release_id,
+        'artist_id': track.artist_id,
+        'duration': track.duration
     })
 
 @blueprint.route('/are-you-up', methods=['GET'])

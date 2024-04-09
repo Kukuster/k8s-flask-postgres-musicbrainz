@@ -50,13 +50,34 @@ BrowseReleasesResult = TypedDict("BrowseReleasesResult", {
 })
 
 
-BrowseRecordingsResult_recording = TypedDict("BrowseRecordingsResult_recording", {
+Recording = TypedDict("Recording", {
     "id": str,
     "title": str,
     "length": int,
 })
 BrowseRecordingsResult = TypedDict("BrowseRecordingsResult", {
-    "recording-list": List[BrowseRecordingsResult_recording],
+    "recording-list": List[Recording],
+})
+
+
+Track = TypedDict("Track", {
+    "id": str,
+    "position": str,
+    "number": str,
+    "length": int, # duration in miliseconds
+    "recording": Recording,
+})
+Medium = TypedDict("Medium", {
+    "track-list": List[Track],
+})
+Release = TypedDict("Release", {
+    "id": str,
+    "title": str,
+    "date": str,
+    "medium-list": List[Medium],
+})
+ReleaseQueryResult = TypedDict("ReleaseQueryResult", {
+    'release': Release,
 })
 
 
@@ -95,3 +116,11 @@ class MusicBrainzAPI:
     def get_recordings(self, release_mbid: str) -> BrowseRecordingsResult:
         self.api_requests.count()
         return musicbrainzngs.browse_recordings(release=release_mbid) #type:ignore
+
+    # def get_all_recording_tracks(self, recording_mbid: str):
+    #     self.api_requests.count()
+    #     return musicbrainzngs.get_recording_by_id(recording_mbid, includes=["artists"]) #type:ignore
+
+    def get_tracks_from_release(self, release_mbid: str) -> ReleaseQueryResult:
+        self.api_requests.count()
+        return musicbrainzngs.get_release_by_id(release_mbid, includes=["recordings"]) #type:ignore

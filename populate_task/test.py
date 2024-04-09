@@ -35,7 +35,7 @@ class TestApp(unittest.TestCase):
             self.assertEqual(artist_search_result["artist-list"][0]["name"], artist_name)
 
         except (KeyError, TypeError, ValueError):
-            self.fail("unexpected response format from search_artist()")
+            self.fail("unexpected response format")
 
 
     def test_get_release_groups(self):
@@ -58,7 +58,7 @@ class TestApp(unittest.TestCase):
             self.assertEqual(release_groups_result["release-group-list"][0]["title"], "Night Visions")
 
         except (KeyError, TypeError, ValueError):
-            self.fail("unexpected response format from browse_release_groups()")
+            self.fail("unexpected response format")
 
 
     def test_get_releases(self):
@@ -83,7 +83,7 @@ class TestApp(unittest.TestCase):
             self.assertIn("label", releases_result["release-list"][0]["label-info-list"][0])
 
         except (KeyError, TypeError, ValueError):
-            self.fail("unexpected response format from browse_releases()")
+            self.fail("unexpected response format")
 
 
     def test_get_recordings(self):
@@ -101,7 +101,44 @@ class TestApp(unittest.TestCase):
             self.assertIn("length", recordings_result["recording-list"][0])
 
         except (KeyError, TypeError, ValueError):
-            self.fail("unexpected response format from browse_recordings()")
+            self.fail("unexpected response format")
+
+
+    def test_get_tracks_from_release(self):
+        release_mbid = '6d29cb0e-9b13-4622-bcc3-d3ebf8745698'
+        release = self.api.get_tracks_from_release(release_mbid)
+
+        self.assertIsInstance(release, dict)
+        self.assertIn("release", release)
+
+        try:
+            self.assertIsInstance(release["release"], dict)
+            self.assertIn("id", release["release"])
+            self.assertIn("title", release["release"])
+            self.assertIn("date", release["release"])
+            self.assertIn("medium-list", release["release"])
+
+            self.assertIsNot(len(release["release"]["medium-list"]), 0)
+
+            self.assertIn("track-list", release["release"]["medium-list"][0])
+            self.assertIsInstance(release["release"]["medium-list"][0]["track-list"], list)
+
+            self.assertIsNot(len(release["release"]["medium-list"][0]["track-list"]), 0)
+            self.assertIn("id", release["release"]["medium-list"][0]["track-list"][0])
+            self.assertIn("length", release["release"]["medium-list"][0]["track-list"][0])
+            self.assertIsInstance(release["release"]["medium-list"][0]["track-list"][0]["length"], str)
+
+            self.assertIn("recording", release["release"]["medium-list"][0]["track-list"][0])
+            self.assertIsInstance(release["release"]["medium-list"][0]["track-list"][0]["recording"], dict)
+
+            self.assertIn("id", release["release"]["medium-list"][0]["track-list"][0]["recording"])
+            self.assertIn("title", release["release"]["medium-list"][0]["track-list"][0]["recording"])
+            self.assertIn("length", release["release"]["medium-list"][0]["track-list"][0]["recording"])
+            self.assertIsInstance(release["release"]["medium-list"][0]["track-list"][0]["recording"]["length"], str)
+
+        except (KeyError, TypeError, ValueError):
+            self.fail("got unexpected response format")
+
 
 
 

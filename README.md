@@ -8,14 +8,14 @@ http://35.225.52.104:60080
 
 ### Endpoints
 
-#### `GET /search-song`
+#### `GET /search-track`
 
-Searches a song by song title and returns song metadata if found.
+Searches a track by track title and returns track metadata if found.
 
 Request parameters:
 | Name | Type | Mandatory | Description |
 | -------- | -------- | -------- | -------- |
-| `q`   | STRING   | yes   | search query that is tested against the song titles in the database. If a song with similar name is present in the database, returns the best match. |
+| `q`   | STRING   | yes   | search query that is tested against the track titles in the database. If a track with similar name is present in the database, returns the best match. |
 
 The only required response parameter is `status`, other response parameters depend on its value.
 
@@ -24,10 +24,10 @@ Response parameters for status code `200`:
 | -------- | -------- | -------- |
 | `status`   | INTEGER   | HTTP status code (200) |
 | `artist_name`   | STRING   | name of the artist |
-| `duration`   | STRING   | time length of the song in the format 'mm:ss' |
-| `mbid`   | STRING   | MusicBrainz UUID (a.k.a. mbid) of the song |
-| `release_title`   | STRING   | name of the release that includes the song. The database only assigns one release per a song with a particular `song_title` |
-| `song_title`   | STRING   | name of the song |
+| `duration`   | STRING   | time length of the track in the format 'mm:ss' |
+| `mbid`   | STRING   | MusicBrainz UUID (a.k.a. mbid) of the track |
+| `release_title`   | STRING   | name of the release that includes the track. The database only assigns one release per a track with a particular `track_title` |
+| `track_title`   | STRING   | name of the track |
 
 
 Response parameters for status code `4xx`:
@@ -40,7 +40,7 @@ Response parameters for status code `4xx`:
 
 Request example:
 
-`curl http://35.225.52.104:60080/search-song?q=radeoactive`
+`curl http://35.225.52.104:60080/search-track?q=radeoactive`
 
 Response example:
 
@@ -50,14 +50,14 @@ Response example:
   "duration": "3:07",
   "mbid": "bd61eda3-eb77-4634-ba66-4a084f7f8455",
   "release_title": "Night Visions",
-  "song_title": "Radioactive",
+  "track_title": "Radioactive",
   "status": 200
 }
 ```
 
 Request example:
 
-`curl http://35.225.52.104:60080/search-song?q=radeeaeaoactive`
+`curl http://35.225.52.104:60080/search-track?q=radeeaeaoactive`
 
 Response example:
 

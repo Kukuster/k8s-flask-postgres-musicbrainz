@@ -10,17 +10,13 @@ from psycopg2.extras import execute_values
 
 from config import DB_NAME, DB_USER, DB_PASS, DB_HOST, DB_PORT, ARTIST_NAME
 from musicbrainz_api import MusicBrainzAPI
+from utils import flatten_list_of_lists, ms_to_durationstr
 
 APP_DIR = '/app'
 
-T = TypeVar("T")
-def flatten_list_of_lists(matrix: List[List[T]]) -> List[T]:
-    flat_list: List[T] = []
-    for row in matrix:
-        flat_list += row
-    return flat_list
 
 release_T = NamedTuple("release_T", [("mbid", str), ("id", int)])
+
 
 
 class populate_db_task:
@@ -33,7 +29,7 @@ class populate_db_task:
     api: MusicBrainzAPI
 
     def create_tables_ifnotexists(self):
-        for schema_file in ["artists_schema.sql", "releases_schema.sql", "songs_schema.sql"]:
+        for schema_file in ["artists_schema.sql", "releases_schema.sql", "tracks_schema.sql"]:
             with open(f"{APP_DIR}/schema/{schema_file}", "r") as f:
                 SQL_QUERY = f.read()
                 print("EXECUTING QUERY: <<")
@@ -152,37 +148,58 @@ class populate_db_task:
             if release_id is not None:
                 assert release_mbid is not None
                 selected_releases.append(release_T(release_mbid, release_id))
-                # return release_mbid, release_id, artist_id #type: Tuple[str, int, int]
 
 
         return selected_releases
 
 
-    def fetch_songs(self, release_mbid: str, release_id: int, artist_id: int):
-        recordings = self.api.get_recordings(release_mbid)
+    # # fetches `recordings` from a release, not `tracks`
+    # #     see: https://musicbrainz.org/doc/Recording
+    # def fetch_songs(self, release_mbid: str, release_id: int, artist_id: int):
+    #     recordings = self.api.get_recordings(release_mbid)
+    #     try:
+    #         recording_list = recordings["recording-list"]
+    #     except (KeyError, TypeError):
+    #         return
+    #     if isinstance(recording_list, list):
+    #         # then `recordings` is not a string
+    #         print(f"Found {len(recording_list)} recordings in release '{release_mbid}'")
+    #         for rec in recording_list:
+    #             try:
+    #                 rec_mbid = rec['id']
+    #                 rec_title = rec['title']
+    #                 rec_duration = int(rec['length'])
+    #             except (KeyError, TypeError):
+    #                 continue
+    #             rec_duration_str = ms_to_durationstr(rec_duration)
+    #             self.save_song_to_database(rec_mbid, rec_title, rec_duration_str, release_id, artist_id)
+
+    def fetch_tracks(self, release_mbid: str, release_id: int, artist_id: int):
+        release = self.api.get_tracks_from_release(release_mbid)
         try:
-            recording_list = recordings["recording-list"]
-        except (KeyError, TypeError):
-            return
-        if isinstance(recording_list, list):
-            # then `recordings` is not a string
-            print(f"Found {len(recording_list)} recordings in release '{release_mbid}'")
-            for rec in recording_list:
+            release = release["release"]
+            tracks = release["medium-list"][0]["track-list"]
+            print(f"Found {len(tracks)} tracks in release '{release_mbid}'")
+            for track in tracks:
                 try:
-                    rec_mbid = rec['id']
-                    rec_title = rec['title']
-                    rec_duration = int(rec['length'])
-                except (KeyError, TypeError):
+                    mbid = track["id"]
+                    title = track["recording"]["title"]
+                    duration = int(track["length"])
+                    duration_str = ms_to_durationstr(duration)
+                except (KeyError, TypeError, ValueError):
+                    # print(f"got track of wrong format: {track=}")
                     continue
-                rec_duration_str = f"{rec_duration // 60000}:{rec_duration % 60000 // 1000 :02d}"
-                self.save_song_to_database(rec_mbid, rec_title, rec_duration_str, release_id, artist_id)
+                # print(f"Found track '{title}' ({duration_str}) in release '{release_mbid}'")
+                self.save_track_to_database(mbid, title, duration_str, release_id, artist_id)
+        except (KeyError, TypeError, ValueError):
+            return
 
 
-    def save_song_to_database(self, mbid: str, song_title: str, duration_str: str, release_id: int, artist_id: int):
-        execute_values(self.cur, "INSERT INTO songs (mbid, song_title, duration, release_id, artist_id) VALUES %s ON CONFLICT DO NOTHING RETURNING id ", [(mbid, song_title, duration_str, release_id, artist_id)])
+    def save_track_to_database(self, mbid: str, track_title: str, duration_str: str, release_id: int, artist_id: int):
+        execute_values(self.cur, "INSERT INTO tracks (mbid, track_title, duration, release_id, artist_id) VALUES %s ON CONFLICT DO NOTHING RETURNING id ", [(mbid, track_title, duration_str, release_id, artist_id)])
         try:
-            song_id: str = self.cur.fetchone()[0] #type:ignore
-            return song_id
+            track_id: str = self.cur.fetchone()[0] #type:ignore
+            return track_id
         except (TypeError, IndexError):
             return None
 
@@ -210,10 +227,11 @@ class populate_db_task:
         except (TypeError, IndexError):
             return None
 
-    def get_song_from_db_by_name(self, song_title: str) -> int:
-        self.cur.execute("SELECT * FROM songs WHERE song_title = %s", (song_title,))
-        song_id: int = self.cur.fetchone() #type:ignore
-        return song_id
+    def get_track_from_db_by_name(self, track_title: str) -> int:
+        self.cur.execute("SELECT * FROM tracks WHERE track_title = %s", (track_title,))
+        track_id: int = self.cur.fetchone() #type:ignore
+        return track_id
+
 
 def main():
     print(f"{DB_NAME=}, {DB_USER=}, {DB_HOST=}, {DB_PORT=}, {ARTIST_NAME=}")
@@ -226,19 +244,21 @@ def main():
 
     artist = task.fetch_artist(ARTIST_NAME)
     if artist is None:
+        print(f'ERROR: Artist "{ARTIST_NAME}" not found in MusicBrainz')
         exit(1)
     artist_id, artist_mbid = artist
 
     releases = task.fetch_releases(artist_id, artist_mbid)
     for rel in releases:
         release_mbid, release_id = rel
-        task.fetch_songs(release_mbid, release_id, artist_id)
-
-    task.conn.commit()
+        task.fetch_tracks(release_mbid, release_id, artist_id)
 
     task.api.stop()
 
+    task.conn.commit()
+
     task.disconnect_from_db()
+
 
 if __name__ == "__main__":
     main()
